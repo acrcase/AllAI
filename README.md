@@ -62,3 +62,9 @@ Pushing a tag such as `v1.0.0` builds both installers on GitHub Actions and atta
 ## Privacy
 
 AllAI has no server of its own and no analytics. It connects to the services you open and, for usage limits, to those services' own endpoints using sessions you are already signed in with. When you add a custom site, its icon is fetched from the site itself or from Google's favicon service.
+
+## License
+
+[MIT](LICENSE) — free to use, modify and share. Contributions and bug reports are welcome: open an issue or a pull request.
+
+ChatGPT, Claude, Gemini, Copilot, DeepSeek, Antigravity, Kimi and other names and logos shown in the app belong to their respective owners. AllAI is an independent project and is not affiliated with or endorsed by them.
