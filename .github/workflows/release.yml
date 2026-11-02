@@ -1,0 +1,72 @@
+name: Release
+
+# "v1.0.0" gibi bir etiket gönderilince DMG (macOS) ve kurulum .exe (Windows) üretilip sürüme eklenir.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build macos --release
+      - name: DMG
+        run: tool/make_dmg.sh build/AllAI-macOS.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AllAI-macOS
+          path: build/AllAI-macOS.dmg
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # flutter_inappwebview_windows, CMake aşamasında `nuget install` ile WebView2 SDK'sını indirir.
+      - uses: nuget/setup-nuget@v2
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Check build output
+        shell: pwsh
+        run: |
+          if (-not (Test-Path build\windows\x64\runner\Release\allai.exe)) { throw 'allai.exe not found' }
+      - name: Installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $v = ("${{ github.ref_name }}" -replace '^v','')
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { $v = '1.0.0' }
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$v" installer\allai.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AllAI-Windows
+          path: build/AllAI-Setup.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/AllAI-macOS.dmg
+            dist/AllAI-Setup.exe
+          generate_release_notes: true
