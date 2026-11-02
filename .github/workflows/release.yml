@@ -19,6 +19,10 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      # Depoda geliştiricinin kendi imzası var; CI'da imzasız (ad-hoc) derlenir.
+      - name: Ad-hoc signing for CI
+        run: |
+          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "-";/; s/DEVELOPMENT_TEAM = [A-Z0-9]*;/DEVELOPMENT_TEAM = "";/' macos/Runner.xcodeproj/project.pbxproj
       - run: flutter build macos --release
       - name: DMG
         run: tool/make_dmg.sh build/AllAI-macOS.dmg
@@ -38,7 +42,10 @@ jobs:
       # flutter_inappwebview_windows, CMake aşamasında `nuget install` ile WebView2 SDK'sını indirir.
       - uses: nuget/setup-nuget@v2
       - run: flutter pub get
+      # flutter_inappwebview_windows <experimental/coroutine> kullanıyor; yeni MSVC bunu hata sayar.
       - run: flutter build windows --release
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
       - name: Check build output
         shell: pwsh
         run: |
